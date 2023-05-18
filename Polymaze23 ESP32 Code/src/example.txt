@@ -1,0 +1,110 @@
+#include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+
+#define MAX_SENSOR_VALUES_1 10
+#define MAX_SENSOR_VALUES_2 5
+
+// Message queue handles
+QueueHandle_t messageQueue1;
+QueueHandle_t messageQueue2;
+
+// Task 1 function (sensor reading 1)
+void task1Function(void *parameter) {
+  float sensorValues1[MAX_SENSOR_VALUES_1];
+
+  while (true) {
+    // Simulating sensor reading 1
+    for (int i = 0; i < MAX_SENSOR_VALUES_1; i++) {
+      sensorValues1[i] = i * 0.1;
+    }
+
+    // Send sensor values array 1 via message queue 1
+    xQueueSend(messageQueue1, sensorValues1, portMAX_DELAY);
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+
+// Task 2 function (sensor reading 2)
+void task2Function(void *parameter) {
+  float sensorValues2[MAX_SENSOR_VALUES_2];
+
+  while (true) {
+    // Simulating sensor reading 2
+    for (int i = 0; i < MAX_SENSOR_VALUES_2; i++) {
+      sensorValues2[i] = i * 0.2;
+    }
+
+    // Send sensor values array 2 via message queue 2
+    xQueueSend(messageQueue2, sensorValues2, portMAX_DELAY);
+
+    vTaskDelay(pdMS_TO_TICKS(2000));
+  }
+}
+
+// Task 3 function (output changing)
+void task3Function(void *parameter) {
+  float receivedValues[MAX_SENSOR_VALUES_1];
+
+  while (true) {
+    // Receive sensor values array 1 from message queue 1
+    xQueueReceive(messageQueue1, receivedValues, portMAX_DELAY);
+
+    // Perform output change based on sensor values 1
+    // Replace with your desired logic
+    for (int i = 0; i < MAX_SENSOR_VALUES_1; i++) {
+      if (receivedValues[i] > 0.5) {
+        Serial.print("Sensor 1 - ");
+        Serial.print(i);
+        Serial.println(": Output high");
+      } else {
+        Serial.print("Sensor 1 - ");
+        Serial.print(i);
+        Serial.println(": Output low");
+      }
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Create message queue 1 for sensor values 1
+  messageQueue1 = xQueueCreate(5, sizeof(float) * MAX_SENSOR_VALUES_1);
+
+  // Create message queue 2 for sensor values 2
+  messageQueue2 = xQueueCreate(5, sizeof(float) * MAX_SENSOR_VALUES_2);
+
+  // Create task 1 (sensor reading 1)
+  xTaskCreate(
+      task1Function,
+      "Task1",
+      1000,
+      NULL,
+      1,
+      NULL);
+
+  // Create task 2 (sensor reading 2)
+  xTaskCreate(
+      task2Function,
+      "Task2",
+      1000,
+      NULL,
+      1,
+      NULL);
+
+  // Create task 3 (output changing)
+  xTaskCreate(
+      task3Function,
+      "Task3",
+      1000,
+      NULL,
+      1,
+      NULL);
+}
+
+void loop() {
+  // Main code here
+}
